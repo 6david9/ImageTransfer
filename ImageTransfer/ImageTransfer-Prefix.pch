@@ -1,0 +1,19 @@
+//
+// Prefix header for all source files of the 'ImageTransfer' target in the 'ImageTransfer' project
+//
+
+#import <Availability.h>
+
+#ifndef __IPHONE_4_0
+#warning "This project uses features only available in iOS SDK 4.0 and later."
+#endif
+
+#ifdef __OBJC__
+    #import <UIKit/UIKit.h>
+    #import <Foundation/Foundation.h>
+    #import <CBExtension.h>
+    #import <AsyncSocket.h>
+#endif
+
+
+#define IMAGE_TRANSFER_PORT     7000
