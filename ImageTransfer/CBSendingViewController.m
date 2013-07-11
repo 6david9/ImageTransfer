@@ -36,13 +36,17 @@ StrongProperty UIImagePickerController *imagePicker;
     [sender resignFirstResponder];
 }
 
+/* 发送图片 */
 - (IBAction)sendImage:(id)sender
 {
     dataSender = nil;
     dataSender = [[Sender alloc] initWithRemoteAddress:self.textField.text onPort:IMAGE_TRANSFER_PORT];
+    // todo: 需要优化，针对不同类型的image都可以转成data
     NSData *imageData = UIImagePNGRepresentation(self.imageView.image);
     [dataSender sendData:imageData];
 }
+
+/* 从相册选择图片 */
 - (IBAction)chooseImage:(id)sender
 {
     [self presentModalViewController:self.imagePicker animated:YES];

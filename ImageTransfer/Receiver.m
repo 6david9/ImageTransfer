@@ -10,6 +10,8 @@
 
 
 #define READING_TAG     9999
+#define HEADER_TAG      1111
+#define BODY_TAG        2222
 @interface Receiver () <AsyncSocketDelegate>
 @end
 
@@ -43,9 +45,7 @@
     {
         NSError *error = NULL;
         if ( ![asyncSocket acceptOnPort:IMAGE_TRANSFER_PORT error:&error] )
-        {
             po( error );
-        }
     }
 }
 
@@ -71,12 +71,13 @@
 {
     print_function();
     /* 开始从 socket 中读取字节流 */
+    // P.S. 每次收到回调后立即读取数据会断开连接，所以采用延迟一秒后再读数据
     double delayInSeconds = 1.0;
     dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
     dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-//        [remoteSocket readDataWithTimeout:-1 tag:READING_TAG];
-//        [remoteSocket readDataToLength:1024*8*10 withTimeout:-1 tag:READING_TAG];
-        [remoteSocket readDataToData:[AsyncSocket CRLFData] withTimeout:-1 buffer:tmpData bufferOffset:0 maxLength:1024*80 tag:READING_TAG];
+        NSUInteger length = sizeof(NSUInteger);
+        NSMutableData *buffer = [NSMutableData data];
+        [remoteSocket readDataToLength:length withTimeout:-1 buffer:buffer bufferOffset:0 tag:HEADER_TAG];
     });
 }
 
@@ -95,20 +96,24 @@
 
 - (void)onSocket:(AsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag
 {
-    if (READING_TAG != tag) return;
-    
     print_function();
     
-    if ( !self.delegate )
-        return;
-    
-    if ([self.delegate respondsToSelector:@selector(receiver:didReceiveData:)]) {
-        [self.delegate receiver:self didReceiveData:data];
+    if (HEADER_TAG == tag)
+    {
+        NSUInteger length = 0;
+        [data getBytes:&length length:sizeof(NSUInteger)];
+        
+        NSMutableData *buffer = [NSMutableData data];
+        [remoteSocket readDataToLength:length withTimeout:-1 buffer:buffer bufferOffset:0 tag:BODY_TAG];
     }
-    [self disconnect];
-    [self listen];
-    
-    pi( [data length] );
+    else if (BODY_TAG == tag)
+    {
+        /* Notify the delegate */
+        if ( !self.delegate ) return;
+        
+        if ([self.delegate respondsToSelector:@selector(receiver:didReceiveData:)])
+            [self.delegate receiver:self didReceiveData:data];
+    }
 }
 
 - (void)onSocket:(AsyncSocket *)sock didReadPartialDataOfLength:(NSUInteger)partialLength tag:(long)tag
