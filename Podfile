@@ -1,2 +1,1 @@
 pod 'CocoaAsyncSocket'
-pod 'CBExtension'
